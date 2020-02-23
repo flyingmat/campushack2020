@@ -72,7 +72,6 @@ class TweetProcessor:
                 i = k
                 locations.append(' '.join(current_comb))
             i += 1
-        print(ents)
         return locations
 
     # return tweet data for further classification and/or displaying
