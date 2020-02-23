@@ -8,9 +8,10 @@ from string import punctuation
 import re
 
 english_stop_words = set(stopwords.words('english'))
-ner_model = '../stanford-english-corenlp-2018-10-05-models/edu/stanford/nlp/models/ner/english.conll.4class.caseless.distsim.crf.ser.gz'
-ner_jar = '../stanford-ner-2018-10-16/stanford-ner.jar'
+ner_model = '../english.conll.4class.caseless.distsim.crf.ser.gz' # NOTE: caseless model is used
+ner_jar = '../stanford-ner.jar'
 
+# holds tweet analysis data
 class TweetData:
     def __init__(self, tweet: Tweet, clean_text: List[str], locations: List[str], sentiment: bool):
         self.tweet = tweet
@@ -18,13 +19,15 @@ class TweetData:
         self.locations = locations
         self.sentiment = sentiment
 
+# analyzes tweets, finding locations and sentiment value
 class TweetProcessor:
     def __init__(self, custom_stop_words: Set[str] = set(), deep_clean: bool = True):
         self.ner = StanfordNERTagger(ner_model, ner_jar)
         self.stop_words = english_stop_words.union(custom_stop_words).union(punctuation)
         self.deep_clean = deep_clean
 
-    def clean(self, s: str):
+    # cleans a tweet's text in preparation for sentiment analysis
+    def clean(self, s: str) -> str:
         s = s.lower() # convert text to lower-case
         s = re.sub(r'\n', ' ', s) # replace newline characters
 
@@ -35,7 +38,8 @@ class TweetProcessor:
 
         return ''.join(s)
 
-    def ner_clean(self, s: str):
+    # cleans a tweet's text in preparation for nre location discovery
+    def ner_clean(self, s: str) -> str:
         s = re.sub(r'\n', ' ', s) # replace newline characters
         s = re.sub('((www\.[^\s]+)|(https?://[^\s]+))', 'URL', s) # replace URLs
         s = re.sub('@[^\s]+', 'USER', s) # replace usernames
@@ -44,14 +48,17 @@ class TweetProcessor:
 
         return ''.join(s)
 
-    def tokenize(self, s: str):
+    # tokenizes cleaned text ignoring stop words
+    def tokenize(self, s: str) -> List[str]:
         return [w for w in word_tokenize(s) if w not in self.stop_words]
 
+    # returns a list of locations found in the tweet's text through nre tagging
     def locations(self, s: str) -> List[str]:
         ssplit = s.split()
         ents = self.ner.tag(ssplit)
         locations = []
         i = 0
+        # bind together multiple-word locations e.g. Los Angeles, Rio de Janeiro
         while i < len(ents):
             if (e := ents[i])[1] == 'LOCATION':
                 current_comb = [e[0]]
@@ -68,11 +75,13 @@ class TweetProcessor:
         print(ents)
         return locations
 
+    # return tweet data for further classification and/or displaying
     def get_data(self, tweet: Tweet):
         clean_text = self.clean(tweet.text)
         locations = self.locations(self.ner_clean(tweet.text))
         return TweetData(tweet, self.tokenize(clean_text), locations, True)
 
+# just some testing examples
 if __name__ == '__main__':
     proc = TweetProcessor()
     print(proc.get_data(Tweet(None, "boi i live in the uk lol", None, None)).locations)
