@@ -1,6 +1,18 @@
 from raven import *
 from analyze import *
+import argparse
+
 driver = init_driver()
+processor = TweetProcessor()
+
+def test(q):
+    for tweet in tweet_stream(driver, query_to_url(q), 10):
+        data = processor.get_data(tweet)
+        print(data.tweet.text)
+        print(data.locations)
+
+# NOTE: use argparse because it's easier lol
+
 def main():
     count = 0
     args = []
