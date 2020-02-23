@@ -104,7 +104,10 @@ def query_to_url(s):
 def tweet_stream(driver, url, n=-1):
     driver.get(url)
 
+    tweet_i = 0
     for tweet_element in stream_tweet_elements(driver):
+        if tweet_i == n:
+            return
         driver.implicitly_wait(IMPLICIT_WAIT/40)
         if media := tweet_media(tweet_element):
             tweet = Tweet(*tweet_info(tweet_element), media)
@@ -112,6 +115,7 @@ def tweet_stream(driver, url, n=-1):
             tweet = Tweet(*tweet_info(tweet_element))
 
         yield tweet
+        tweet_i += 1
 
 # tweet stream dumping function
 def tweet_stream_dump(driver, url, n=-1, download_media=False, overwrite_media=False, verbose=False):
